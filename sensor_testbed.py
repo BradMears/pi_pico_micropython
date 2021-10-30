@@ -1,10 +1,10 @@
-#from mcp9808 import MCP9808
-#import utime
+from machine import ADC
 from machine import Pin, I2C
+from ssd1306 import SSD1306_I2C
 import utime
 import dht11_pio 
-from machine import ADC
 from internal_temperature_sensor import InternalTemperatureSensor
+#from mcp9808 import MCP9808
 
 def map_value(in_v, in_min, in_max, out_min, out_max):           # (3)
     """Helper method to map an input value (v_in)
@@ -34,18 +34,32 @@ class TMP36_TemperatureSensor():
         reading = map_value(reading, 0, self.max_analog_value, 0, self.analog_ref*1000)
         return (reading - 500) / 10.0  #[(Vout in mV) - 500] / 10
 
+def oled_writeln(oled, s, line_num):
+    oled.text(s, 0, line_num*8)
+    
+    
 if __name__ == "__main__":
+    
+    i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
+    oled = SSD1306_I2C(128, 32, i2c)
     
     # Read the temperature from three different sensors
     # None of these are particularly accurate so don't expect them to match
     internal_temp_sensor = InternalTemperatureSensor()
     tmp36 = TMP36_TemperatureSensor(0) # TMP36 IC on ADC0
     dht11 = dht11_pio.DHT11_PIO(15, 1)
+    utime.sleep_ms(500)
     for ii in range(5):
-        dht11.read()
         print(f'tmp36 reading = {round(tmp36.read())}')
         print(f'Internal temperature = {round(internal_temp_sensor.read())}')
+        humidity, temperature = dht11.read()
         utime.sleep_ms(500)
+        oled.fill(0)
+        oled_writeln(oled, f'TMP36: {round(tmp36.read())} C', 0)
+        oled_writeln(oled, f'Pico: {round(internal_temp_sensor.read())} C', 1)
+        oled_writeln(oled, f'DHT11: {temperature} C',2)
+        oled_writeln(oled, f'DHT11: {humidity}%',3)
+        oled.show()
     dht11.deinit()
 
 

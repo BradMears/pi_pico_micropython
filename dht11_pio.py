@@ -39,9 +39,11 @@ class DHT11_PIO():
         if((total & 255) == data[4]):
             humidity=data[0]        #DHT11 provides integer humidity (no decimal part)
             temperature=(1-2*(data[2] >> 7) )*(data[2] & 0x7f) #DHT11 provides signed integer temperature (no decimal part)
-            print("Humidity: %d%%, Temp: %dC" % (humidity, temperature))        
+            print("Humidity: %d%%, Temp: %dC" % (humidity, temperature))
+            return (humidity, temperature)
         else:
             print("Checksum: failed")
+            return (None, None)
 
     @asm_pio(set_init=(PIO.OUT_HIGH),autopush=True, push_thresh=8) #output one byte at a time
     def DHT11():
